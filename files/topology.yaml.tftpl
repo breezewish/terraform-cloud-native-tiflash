@@ -1,0 +1,45 @@
+global:
+  user: "tidb"
+  ssh_port: 22
+  deploy_dir: "/tidb-deploy"
+
+server_configs:
+  tidb: {}
+  tikv: {}
+  pd: {}
+  tiflash: {}
+
+tidb_servers:
+  %{~ for host in tidb_hosts ~}
+  - host: ${host}
+    config:
+      disaggregated-tiflash: true
+  %{~ endfor ~}
+
+tikv_servers:
+  %{~ for host in tikv_hosts ~}
+  - host: ${host}
+  %{~ endfor ~}
+
+tiflash_servers:
+  - host: ${tiflash_storage_host}
+    config:
+      flash.disaggregated_mode: tiflash_storage
+      storage.remote.dir: /mnt/jfs-shared
+      storage.main.dir: ["/tidb-deploy/tiflash-9000/data"]
+  %{~ for host in tiflash_computing_hosts ~}
+  - host: ${host}
+    config:
+      flash.disaggregated_mode: tiflash_compute
+      storage.remote.dir: /mnt/jfs-shared
+      storage.main.dir: ["/tidb-deploy/tiflash-9000/data"]
+  %{~ endfor ~}
+
+pd_servers:
+  - host: 172.31.8.1
+
+monitoring_servers:
+  - host: 172.31.8.1
+
+grafana_servers:
+  - host: 172.31.8.1
