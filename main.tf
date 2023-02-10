@@ -2,7 +2,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 3.27"
+      version = "~> 4.53.0"
     }
   }
 
@@ -46,11 +46,11 @@ resource "aws_instance" "tidb" {
   private_ip                  = "172.31.7.${count.index + 1}"
 
   root_block_device {
-    volume_size           = 200
+    volume_size           = 100
     delete_on_termination = true
     volume_type           = "gp3"
-    iops                  = 4000
-    throughput            = 288
+    iops                  = 3000
+    throughput            = 125
   }
 
   tags = {
@@ -83,11 +83,11 @@ resource "aws_instance" "pd" {
   private_ip                  = "172.31.8.1"
 
   root_block_device {
-    volume_size           = 200
+    volume_size           = 100
     delete_on_termination = true
     volume_type           = "gp3"
-    iops                  = 4000
-    throughput            = 288
+    iops                  = 3000
+    throughput            = 125
   }
 
   tags = {
@@ -122,7 +122,7 @@ resource "aws_instance" "tikv" {
   private_ip                  = "172.31.6.${count.index + 1}"
 
   root_block_device {
-    volume_size           = 200
+    volume_size           = 300
     delete_on_termination = true
     volume_type           = "gp3"
     iops                  = 4000
@@ -161,10 +161,10 @@ resource "aws_instance" "tiflash" {
   private_ip                  = "172.31.9.${count.index + 1}"
 
   root_block_device {
-    volume_size           = 1000
+    volume_size           = 300
     delete_on_termination = true
     volume_type           = "gp3"
-    iops                  = 12000
+    iops                  = 4000
     throughput            = 288
   }
 
@@ -208,11 +208,11 @@ resource "aws_instance" "center" {
   private_ip                  = "172.31.1.1"
 
   root_block_device {
-    volume_size           = 200
+    volume_size           = 100
     delete_on_termination = true
     volume_type           = "gp3"
-    iops                  = 4000
-    throughput            = 288
+    iops                  = 3000
+    throughput            = 125
   }
 
   tags = {

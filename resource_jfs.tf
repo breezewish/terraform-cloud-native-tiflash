@@ -4,8 +4,8 @@ resource "aws_elasticache_subnet_group" "main" {
 }
 
 resource "aws_elasticache_replication_group" "main" {
-  replication_group_id          = "${local.namespace}-${random_id.id.hex}-group-1"
-  replication_group_description = "Redis for JFS"
+  replication_group_id  = "${local.namespace}-${random_id.id.hex}-group-1"
+  description           = "Redis for JFS"
 
   node_type            = "cache.r6g.large"
   port                 = 6379
