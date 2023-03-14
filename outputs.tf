@@ -18,10 +18,18 @@ output "private-ip-tikv" {
   value = aws_instance.tikv.*.private_ip
 }
 
-output "private-ip-tiflash" {
-  value = aws_instance.tiflash.*.private_ip
+output "private-ip-tiflash-write" {
+  value = aws_instance.tiflash_write.*.private_ip
+}
+
+output "private-ip-tiflash-compute" {
+  value = aws_instance.tiflash_compute.*.private_ip
 }
 
 output "private-ip-pd" {
   value = aws_instance.pd.*.private_ip
+}
+
+output "s3-bucket" {
+  value = aws_s3_bucket.main.bucket
 }

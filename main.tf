@@ -148,8 +148,8 @@ resource "aws_instance" "tikv" {
   }
 }
 
-resource "aws_instance" "tiflash" {
-  count = local.n_tiflash
+resource "aws_instance" "tiflash_write" {
+  count = local.n_tiflash_write
 
   ami                         = local.image
   instance_type               = local.tiflash_instance
@@ -169,7 +169,7 @@ resource "aws_instance" "tiflash" {
   }
 
   tags = {
-    Name = "${local.namespace}-tiflash-${count.index}"
+    Name = "${local.namespace}-tiflash-write-${count.index}"
   }
 
   connection {
@@ -185,15 +185,44 @@ resource "aws_instance" "tiflash" {
   provisioner "remote-exec" {
     script = "./files/bootstrap_all.sh"
   }
+}
+
+resource "aws_instance" "tiflash_compute" {
+  count = local.n_tiflash_compute
+
+  ami                         = local.image
+  instance_type               = local.tiflash_instance
+  key_name                    = aws_key_pair.master_key.id
+  vpc_security_group_ids      = [aws_security_group.ssh.id]
+  iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
+  subnet_id                   = aws_subnet.main.id
+  associate_public_ip_address = true
+  private_ip                  = "172.31.10.${count.index + 1}"
+
+  root_block_device {
+    volume_size           = 300
+    delete_on_termination = true
+    volume_type           = "gp3"
+    iops                  = 4000
+    throughput            = 288
+  }
+
+  tags = {
+    Name = "${local.namespace}-tiflash-compute-${count.index}"
+  }
+
+  connection {
+    type        = "ssh"
+    user        = "ubuntu"
+    private_key = file(local.master_ssh_key)
+    host        = self.public_ip
+  }
 
   provisioner "remote-exec" {
-    inline = [
-      "curl -sSL https://d.juicefs.com/install | sh -",
-      "sudo cp /usr/local/bin/juicefs /sbin/mount.juicefs",
-      "echo 'redis://${aws_elasticache_replication_group.main.primary_endpoint_address}:6379/1    /mnt/jfs-shared    juicefs    _netdev    0    0' | sudo tee -a /etc/fstab",
-      "juicefs format --storage s3 --bucket https://${aws_s3_bucket.main.bucket_regional_domain_name} redis://${aws_elasticache_replication_group.main.primary_endpoint_address}:6379/1 jfs-shared || true",
-      "sudo juicefs mount --background redis://${aws_elasticache_replication_group.main.primary_endpoint_address}:6379/1 /mnt/jfs-shared"
-    ]
+    inline = local.provisioner_add_alternative_ssh_public
+  }
+  provisioner "remote-exec" {
+    script = "./files/bootstrap_all.sh"
   }
 }
 
@@ -237,8 +266,10 @@ resource "aws_instance" "center" {
     content = templatefile("./files/topology.yaml.tftpl", {
       tidb_hosts = aws_instance.tidb[*].private_ip,
       tikv_hosts = aws_instance.tikv[*].private_ip,
-      tiflash_storage_host = aws_instance.tiflash[0].private_ip,
-      tiflash_computing_hosts = slice(aws_instance.tiflash[*].private_ip, 1, length(aws_instance.tiflash)),
+      tiflash_write_hosts = aws_instance.tiflash_write[*].private_ip,
+      tiflash_compute_hosts = aws_instance.tiflash_compute[*].private_ip,
+      s3_region = local.region,
+      s3_bucket = aws_s3_bucket.main.bucket,
     })
     destination = "/home/ubuntu/topology.yaml"
   }

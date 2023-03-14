@@ -14,6 +14,7 @@ tidb_servers:
   - host: ${host}
     config:
       disaggregated-tiflash: true
+      use-autoscaler: false
   %{~ endfor ~}
 
 tikv_servers:
@@ -22,16 +23,27 @@ tikv_servers:
   %{~ endfor ~}
 
 tiflash_servers:
-  - host: ${tiflash_storage_host}
+  %{~ for host in tiflash_write_hosts ~}
+  - host: ${host}
     config:
-      flash.disaggregated_mode: tiflash_storage
-      storage.remote.dir: /mnt/jfs-shared
+      flash.disaggregated_mode: tiflash_write
+      storage.format_version: 5
+      storage.s3.endpoint: http://s3.${s3_region}.amazonaws.com
+      storage.s3.bucket: ${s3_bucket}
+      storage.s3.root: /
       storage.main.dir: ["/tidb-deploy/tiflash-9000/data"]
-  %{~ for host in tiflash_computing_hosts ~}
+  %{~ endfor ~}
+  %{~ for host in tiflash_compute_hosts ~}
   - host: ${host}
     config:
       flash.disaggregated_mode: tiflash_compute
-      storage.remote.dir: /mnt/jfs-shared
+      flash.use_autoscaler: false
+      storage.format_version: 5
+      storage.s3.endpoint: http://s3.${s3_region}.amazonaws.com
+      storage.s3.bucket: ${s3_bucket}
+      storage.s3.root: /
+      storage.remote.cache.dir: /tidb-deploy/tiflash-9000/remote_cache
+      storage.remote.cache.capacity: 100000000000
       storage.main.dir: ["/tidb-deploy/tiflash-9000/data"]
   %{~ endfor ~}
 
