@@ -36,6 +36,7 @@ tiflash_servers:
   %{~ for host in tiflash_compute_hosts ~}
   - host: ${host}
     config:
+      delta_index_cache_size: 2000
       flash.disaggregated_mode: tiflash_compute
       flash.use_autoscaler: false
       storage.format_version: 5
