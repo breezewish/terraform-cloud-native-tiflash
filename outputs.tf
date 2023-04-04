@@ -1,5 +1,5 @@
 output "ssh-center" {
-  value = "ssh ubuntu@${aws_instance.center.public_ip}"
+  value = "ssh ${local.username}@${aws_instance.center.public_ip}"
 }
 
 output "url-tidb-dashboard" {

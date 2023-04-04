@@ -59,7 +59,7 @@ resource "aws_instance" "tidb" {
 
   connection {
     type        = "ssh"
-    user        = "ubuntu"
+    user        = local.username
     private_key = file(local.master_ssh_key)
     host        = self.public_ip
   }
@@ -96,7 +96,7 @@ resource "aws_instance" "pd" {
 
   connection {
     type        = "ssh"
-    user        = "ubuntu"
+    user        = local.username
     private_key = file(local.master_ssh_key)
     host        = self.public_ip
   }
@@ -135,7 +135,7 @@ resource "aws_instance" "tikv" {
 
   connection {
     type        = "ssh"
-    user        = "ubuntu"
+    user        = local.username
     private_key = file(local.master_ssh_key)
     host        = self.public_ip
   }
@@ -174,7 +174,7 @@ resource "aws_instance" "tiflash_write" {
 
   connection {
     type        = "ssh"
-    user        = "ubuntu"
+    user        = local.username
     private_key = file(local.master_ssh_key)
     host        = self.public_ip
   }
@@ -213,7 +213,7 @@ resource "aws_instance" "tiflash_compute" {
 
   connection {
     type        = "ssh"
-    user        = "ubuntu"
+    user        = local.username
     private_key = file(local.master_ssh_key)
     host        = self.public_ip
   }
@@ -250,7 +250,7 @@ resource "aws_instance" "center" {
 
   connection {
     type        = "ssh"
-    user        = "ubuntu"
+    user        = local.username
     private_key = file(local.master_ssh_key)
     host        = self.public_ip
   }
@@ -259,7 +259,7 @@ resource "aws_instance" "center" {
     content = templatefile("./files/haproxy.cfg.tftpl", {
       tidb_hosts = aws_instance.tidb[*].private_ip,
     })
-    destination = "/home/ubuntu/haproxy.cfg"
+    destination = "/home/${local.username}/haproxy.cfg"
   }
 
   provisioner "file" {
@@ -271,7 +271,7 @@ resource "aws_instance" "center" {
       s3_region = local.region,
       s3_bucket = aws_s3_bucket.main.bucket,
     })
-    destination = "/home/ubuntu/topology.yaml"
+    destination = "/home/${local.username}/topology.yaml"
   }
 
   provisioner "remote-exec" {
@@ -284,11 +284,11 @@ resource "aws_instance" "center" {
   # add keys to access other hosts
   provisioner "file" {
     source      = local.master_ssh_key
-    destination = "/home/ubuntu/.ssh/id_rsa"
+    destination = "/home/${local.username}/.ssh/id_rsa"
   }
   provisioner "file" {
     source      = local.master_ssh_public
-    destination = "/home/ubuntu/.ssh/id_rsa.pub"
+    destination = "/home/${local.username}/.ssh/id_rsa.pub"
   }
   provisioner "remote-exec" {
     inline = [
