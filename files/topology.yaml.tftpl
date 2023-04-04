@@ -27,7 +27,6 @@ tiflash_servers:
   - host: ${host}
     config:
       flash.disaggregated_mode: tiflash_write
-      storage.format_version: 5
       storage.s3.endpoint: http://s3.${s3_region}.amazonaws.com
       storage.s3.bucket: ${s3_bucket}
       storage.s3.root: /
@@ -38,8 +37,6 @@ tiflash_servers:
     config:
       delta_index_cache_size: 2000
       flash.disaggregated_mode: tiflash_compute
-      flash.use_autoscaler: false
-      storage.format_version: 5
       storage.s3.endpoint: http://s3.${s3_region}.amazonaws.com
       storage.s3.bucket: ${s3_bucket}
       storage.s3.root: /
