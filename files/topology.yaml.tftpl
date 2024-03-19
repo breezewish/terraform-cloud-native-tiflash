@@ -39,7 +39,7 @@ tidb_servers:
   %{~ endfor ~}
 
 tikv_servers:
-  %{~ for host in tikv_hosts ~}
+  %{~ for idx, host in tikv_hosts ~}
   - host: ${host}
     config:
       server.labels: { host: "tikv${idx}" }
