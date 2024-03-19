@@ -24,22 +24,6 @@ resource "aws_route_table_association" "main" {
   route_table_id = aws_route_table.main.id
 }
 
-
-resource "aws_eip" "center" {
-  vpc                       = true
-  depends_on                = [ aws_internet_gateway.main ]
-  network_interface         = aws_network_interface.center.id
-  associate_with_private_ip = "172.31.1.1"
-}
-
-resource "aws_eip" "pd" {
-  vpc                       = true
-  depends_on                = [ aws_internet_gateway.main ]
-  network_interface         = aws_network_interface.pd.id
-  associate_with_private_ip = "172.31.8.1"
-}
-
-
 resource "aws_security_group" "ssh" {
   ingress {
     from_port   = 22
