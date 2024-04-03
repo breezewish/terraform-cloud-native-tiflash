@@ -75,7 +75,7 @@ tiflash_servers:
       storage.s3.bucket: ${s3_bucket}
       storage.s3.root: /tiflash-cse/
       storage.remote.cache.dir: /tidb-deploy/tiflash-9000/remote_cache
-      storage.remote.cache.capacity: 100000000000
+      storage.remote.cache.capacity: 200000000000
       storage.main.dir: ["/tidb-deploy/tiflash-9000/data"]
   %{~ endfor ~}
 
