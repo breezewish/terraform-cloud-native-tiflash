@@ -2,13 +2,13 @@
 
 locals {
   # image is region-local. If you changed region, please also change image.
-  # AMIs of each region (Ubuntu 20.04 + OMZ + KernelTunes):
-  # us-east-1	ami-0454a7af38c718b80
-  # us-east-2	ami-052a8e83f950981e6
-  # us-west-1	ami-0bf9994041badd206
-  # us-west-2	ami-045b4649ab79b58da
+  # AMIs of each region (Ubuntu 22.04 + OMZ + KernelTunes):
+  # us-east-1	ami-0e2732470fc684140
+  # us-east-2	ami-05cda54fbc39e2381
+  # us-west-1	ami-0575bfdeb6f59b5d8
+  # us-west-2	ami-003e5556ddc999e13
   region = "us-west-2"
-  image  = "ami-045b4649ab79b58da"
+  image  = "ami-003e5556ddc999e13"
 
   # If you want to change instance type, ensure that GP3 EBS is available in the instance type.
   tidb_instance    = "c5.2xlarge"
