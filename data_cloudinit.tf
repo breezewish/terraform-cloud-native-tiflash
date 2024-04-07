@@ -16,7 +16,7 @@ locals {
             owner       = "${local.username}:${local.username}"
             encoding    = "b64"
             content     = base64encode(templatefile("./files/haproxy.cfg.tftpl", {
-                tidb_hosts = aws_instance.tidb[*].private_ip,
+                tidb_hosts = local.tidb_private_ips,
             }))
         }]
     })}
@@ -31,10 +31,10 @@ locals {
             owner       = "${local.username}:${local.username}"
             encoding    = "b64"
             content     = base64encode(templatefile("./files/topology.yaml.tftpl", {
-                tidb_hosts = aws_instance.tidb[*].private_ip,
-                tikv_hosts = aws_instance.tikv[*].private_ip,
-                tiflash_write_hosts = aws_instance.tiflash_write[*].private_ip,
-                tiflash_compute_hosts = aws_instance.tiflash_compute[*].private_ip,
+                tidb_hosts = local.tidb_private_ips,
+                tikv_hosts = local.tikv_private_ips,
+                tiflash_write_hosts = local.tiflash_write_private_ips,
+                tiflash_compute_hosts = local.tiflash_compute_private_ips,
                 s3_region = local.region,
                 s3_bucket = aws_s3_bucket.main.bucket,
             }))

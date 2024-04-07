@@ -27,6 +27,15 @@ resource "aws_key_pair" "master_key" {
   public_key = file(local.master_ssh_public)
 }
 
+locals {
+  pd_private_ip = "172.31.8.1"
+  tidb_private_ips = [for i in range(local.n_tidb) : "172.31.7.${i + 1}"]
+  tikv_private_ips = [for i in range(local.n_tikv) : "172.31.6.${i + 1}"]
+  tiflash_write_private_ips = [for i in range(local.n_tiflash_write) : "172.31.9.${i + 1}"]
+  tiflash_compute_private_ips = [for i in range(local.n_tiflash_compute) : "172.31.10.${i + 1}"]
+  center_private_ip = "172.31.1.1"
+}
+
 resource "aws_instance" "tidb" {
   count = local.n_tidb
 
@@ -37,7 +46,7 @@ resource "aws_instance" "tidb" {
   iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
   subnet_id                   = aws_subnet.main.id
   associate_public_ip_address = true
-  private_ip                  = "172.31.7.${count.index + 1}"
+  private_ip                  = local.tidb_private_ips[count.index]
 
   root_block_device {
     volume_size           = 100
@@ -62,7 +71,7 @@ resource "aws_instance" "pd" {
   iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
   subnet_id                   = aws_subnet.main.id
   associate_public_ip_address = true
-  private_ip                  = "172.31.8.1"
+  private_ip                  = local.pd_private_ip
 
   root_block_device {
     volume_size           = 100
@@ -89,7 +98,7 @@ resource "aws_instance" "tikv" {
   iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
   subnet_id                   = aws_subnet.main.id
   associate_public_ip_address = true
-  private_ip                  = "172.31.6.${count.index + 1}"
+  private_ip                  = local.tikv_private_ips[count.index]
 
   root_block_device {
     volume_size           = 400
@@ -116,7 +125,7 @@ resource "aws_instance" "tiflash_write" {
   iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
   subnet_id                   = aws_subnet.main.id
   associate_public_ip_address = true
-  private_ip                  = "172.31.9.${count.index + 1}"
+  private_ip                  = local.tiflash_write_private_ips[count.index]
 
   root_block_device {
     volume_size           = 400
@@ -143,7 +152,7 @@ resource "aws_instance" "tiflash_compute" {
   iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
   subnet_id                   = aws_subnet.main.id
   associate_public_ip_address = true
-  private_ip                  = "172.31.10.${count.index + 1}"
+  private_ip                  = local.tiflash_compute_private_ips[count.index]
 
   root_block_device {
     volume_size           = 400
@@ -168,7 +177,7 @@ resource "aws_instance" "center" {
   iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
   subnet_id                   = aws_subnet.main.id
   associate_public_ip_address = true
-  private_ip                  = "172.31.1.1"
+  private_ip                  = local.center_private_ip
 
   root_block_device {
     volume_size           = 200
