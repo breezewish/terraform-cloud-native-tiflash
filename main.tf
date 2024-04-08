@@ -28,9 +28,12 @@ resource "aws_key_pair" "master_key" {
 }
 
 locals {
-  provisioner_add_alternative_ssh_public = [
-    "echo '${file(local.alternative_ssh_public)}' | tee -a ~/.ssh/authorized_keys",
-  ]
+  pd_private_ip = "172.31.8.1"
+  tidb_private_ips = [for i in range(local.n_tidb) : "172.31.7.${i + 1}"]
+  tikv_private_ips = [for i in range(local.n_tikv) : "172.31.6.${i + 1}"]
+  tiflash_write_private_ips = [for i in range(local.n_tiflash_write) : "172.31.9.${i + 1}"]
+  tiflash_compute_private_ips = [for i in range(local.n_tiflash_compute) : "172.31.10.${i + 1}"]
+  center_private_ip = "172.31.1.1"
 }
 
 resource "aws_instance" "tidb" {
@@ -43,7 +46,7 @@ resource "aws_instance" "tidb" {
   iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
   subnet_id                   = aws_subnet.main.id
   associate_public_ip_address = true
-  private_ip                  = "172.31.7.${count.index + 1}"
+  private_ip                  = local.tidb_private_ips[count.index]
 
   root_block_device {
     volume_size           = 100
@@ -57,40 +60,18 @@ resource "aws_instance" "tidb" {
     Name = "${local.namespace}-tidb-${count.index}"
   }
 
-  connection {
-    type        = "ssh"
-    user        = local.username
-    private_key = file(local.master_ssh_key)
-    host        = self.public_ip
-  }
-
-  provisioner "remote-exec" {
-    inline = local.provisioner_add_alternative_ssh_public
-  }
-  provisioner "remote-exec" {
-    script = "./files/bootstrap_all.sh"
-  }
-}
-
-resource "aws_network_interface" "pd" {
-  subnet_id       = aws_subnet.main.id
-  private_ips     = ["172.31.8.1"]
-  security_groups = [aws_security_group.ssh.id, aws_security_group.etcd.id, aws_security_group.grafana.id]
+  user_data_base64 = data.cloudinit_config.common_server.rendered
 }
 
 resource "aws_instance" "pd" {
   ami                         = local.image
   instance_type               = local.pd_instance
   key_name                    = aws_key_pair.master_key.id
-  # vpc_security_group_ids      = [aws_security_group.ssh.id, aws_security_group.etcd.id, aws_security_group.grafana.id]
+  vpc_security_group_ids      = [aws_security_group.ssh.id, aws_security_group.etcd.id, aws_security_group.grafana.id]
   iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
-  # subnet_id                   = aws_subnet.main.id
-  # private_ip                  = "172.31.8.1"
-
-  network_interface {
-    network_interface_id = aws_network_interface.pd.id
-    device_index         = 0
-  }
+  subnet_id                   = aws_subnet.main.id
+  associate_public_ip_address = true
+  private_ip                  = local.pd_private_ip
 
   root_block_device {
     volume_size           = 100
@@ -104,19 +85,7 @@ resource "aws_instance" "pd" {
     Name = "${local.namespace}-pd-1"
   }
 
-  connection {
-    type        = "ssh"
-    user        = local.username
-    private_key = file(local.master_ssh_key)
-    host        = aws_eip.pd.public_ip
-  }
-
-  provisioner "remote-exec" {
-    inline = local.provisioner_add_alternative_ssh_public
-  }
-  provisioner "remote-exec" {
-    script = "./files/bootstrap_all.sh"
-  }
+  user_data_base64 = data.cloudinit_config.common_server.rendered
 }
 
 resource "aws_instance" "tikv" {
@@ -129,10 +98,10 @@ resource "aws_instance" "tikv" {
   iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
   subnet_id                   = aws_subnet.main.id
   associate_public_ip_address = true
-  private_ip                  = "172.31.6.${count.index + 1}"
+  private_ip                  = local.tikv_private_ips[count.index]
 
   root_block_device {
-    volume_size           = 300
+    volume_size           = 400
     delete_on_termination = true
     volume_type           = "gp3"
     iops                  = 4000
@@ -143,19 +112,7 @@ resource "aws_instance" "tikv" {
     Name = "${local.namespace}-tikv-${count.index}"
   }
 
-  connection {
-    type        = "ssh"
-    user        = local.username
-    private_key = file(local.master_ssh_key)
-    host        = self.public_ip
-  }
-
-  provisioner "remote-exec" {
-    inline = local.provisioner_add_alternative_ssh_public
-  }
-  provisioner "remote-exec" {
-    script = "./files/bootstrap_all.sh"
-  }
+  user_data_base64 = data.cloudinit_config.common_server.rendered
 }
 
 resource "aws_instance" "tiflash_write" {
@@ -168,10 +125,10 @@ resource "aws_instance" "tiflash_write" {
   iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
   subnet_id                   = aws_subnet.main.id
   associate_public_ip_address = true
-  private_ip                  = "172.31.9.${count.index + 1}"
+  private_ip                  = local.tiflash_write_private_ips[count.index]
 
   root_block_device {
-    volume_size           = 300
+    volume_size           = 400
     delete_on_termination = true
     volume_type           = "gp3"
     iops                  = 4000
@@ -182,19 +139,7 @@ resource "aws_instance" "tiflash_write" {
     Name = "${local.namespace}-tiflash-write-${count.index}"
   }
 
-  connection {
-    type        = "ssh"
-    user        = local.username
-    private_key = file(local.master_ssh_key)
-    host        = self.public_ip
-  }
-
-  provisioner "remote-exec" {
-    inline = local.provisioner_add_alternative_ssh_public
-  }
-  provisioner "remote-exec" {
-    script = "./files/bootstrap_all.sh"
-  }
+  user_data_base64 = data.cloudinit_config.common_server.rendered
 }
 
 resource "aws_instance" "tiflash_compute" {
@@ -207,10 +152,10 @@ resource "aws_instance" "tiflash_compute" {
   iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
   subnet_id                   = aws_subnet.main.id
   associate_public_ip_address = true
-  private_ip                  = "172.31.10.${count.index + 1}"
+  private_ip                  = local.tiflash_compute_private_ips[count.index]
 
   root_block_device {
-    volume_size           = 300
+    volume_size           = 400
     delete_on_termination = true
     volume_type           = "gp3"
     iops                  = 4000
@@ -221,43 +166,21 @@ resource "aws_instance" "tiflash_compute" {
     Name = "${local.namespace}-tiflash-compute-${count.index}"
   }
 
-  connection {
-    type        = "ssh"
-    user        = local.username
-    private_key = file(local.master_ssh_key)
-    host        = self.public_ip
-  }
-
-  provisioner "remote-exec" {
-    inline = local.provisioner_add_alternative_ssh_public
-  }
-  provisioner "remote-exec" {
-    script = "./files/bootstrap_all.sh"
-  }
-}
-
-resource "aws_network_interface" "center" {
-  subnet_id       = aws_subnet.main.id
-  private_ips     = ["172.31.1.1"]
-  security_groups = [aws_security_group.ssh.id]
+  user_data_base64 = data.cloudinit_config.common_server.rendered
 }
 
 resource "aws_instance" "center" {
   ami                         = local.image
   instance_type               = local.center_instance
   key_name                    = aws_key_pair.master_key.id
-  # vpc_security_group_ids      = [aws_security_group.ssh.id]
+  vpc_security_group_ids      = [aws_security_group.ssh.id]
   iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
-  # subnet_id                   = aws_subnet.main.id
-  # private_ip                  = "172.31.1.1"
-
-  network_interface {
-    network_interface_id = aws_network_interface.center.id
-    device_index         = 0
-  }
+  subnet_id                   = aws_subnet.main.id
+  associate_public_ip_address = true
+  private_ip                  = local.center_private_ip
 
   root_block_device {
-    volume_size           = 100
+    volume_size           = 200
     delete_on_termination = true
     volume_type           = "gp3"
     iops                  = 3000
@@ -268,55 +191,5 @@ resource "aws_instance" "center" {
     Name = "${local.namespace}-center"
   }
 
-  connection {
-    type        = "ssh"
-    user        = local.username
-    private_key = file(local.master_ssh_key)
-    host        = aws_eip.center.public_ip
-  }
-
-  provisioner "file" {
-    content = templatefile("./files/haproxy.cfg.tftpl", {
-      tidb_hosts = aws_instance.tidb[*].private_ip,
-    })
-    destination = "/home/${local.username}/haproxy.cfg"
-  }
-
-  provisioner "file" {
-    content = templatefile("./files/topology.yaml.tftpl", {
-      tidb_hosts = aws_instance.tidb[*].private_ip,
-      tikv_hosts = aws_instance.tikv[*].private_ip,
-      tiflash_write_hosts = aws_instance.tiflash_write[*].private_ip,
-      tiflash_compute_hosts = aws_instance.tiflash_compute[*].private_ip,
-      s3_region = local.region,
-      s3_bucket = aws_s3_bucket.main.bucket,
-    })
-    destination = "/home/${local.username}/topology.yaml"
-  }
-
-  provisioner "remote-exec" {
-    inline = local.provisioner_add_alternative_ssh_public
-  }
-  provisioner "remote-exec" {
-    script = "./files/bootstrap_all.sh"
-  }
-
-  # add keys to access other hosts
-  provisioner "file" {
-    source      = local.master_ssh_key
-    destination = "/home/${local.username}/.ssh/id_rsa"
-  }
-  provisioner "file" {
-    source      = local.master_ssh_public
-    destination = "/home/${local.username}/.ssh/id_rsa.pub"
-  }
-  provisioner "remote-exec" {
-    inline = [
-      "chmod 400 ~/.ssh/id_rsa",
-    ]
-  }
-
-  provisioner "remote-exec" {
-    script = "./files/bootstrap_center.sh"
-  }
+  user_data_base64 = data.cloudinit_config.center_server.rendered
 }
